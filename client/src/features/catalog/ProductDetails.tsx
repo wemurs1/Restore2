@@ -1,34 +1,35 @@
 import { useState, type ChangeEvent } from "react";
 import { useParams } from "react-router";
-import {
-  Button,
-  Divider,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Button, Divider, Grid, Table, TableBody, TableCell, TableContainer, TableRow, TextField, Typography } from "@mui/material";
 import { useFetchProductDetailsQuery } from "./catalogApi";
+import { useAddBasketItemMutation, useFetchBasketQuery, useRemoveBasketItemMutation } from "../basket/basketApi";
 
 export default function ProductDetails() {
   const { id } = useParams();
-  const [quantity, setQuantity] = useState(1);
+  const [removeBasketItem] = useRemoveBasketItemMutation();
+  const [addBasketItem] = useAddBasketItemMutation();
+  const { data: basket } = useFetchBasketQuery();
+  const item = basket?.items.find((x) => x.productId === +id!);
+  const [quantity, setQuantity] = useState(item ? item.quantity : 0);
+
+  const { data: product, isLoading } = useFetchProductDetailsQuery(id ? +id : 0);
+
+  if (!product || isLoading) return <div>Loading...</div>;
+
+  const handleUpdateBasket = () => {
+    const updatedQuantity = item ? Math.abs(quantity - item.quantity) : quantity;
+    if (!item || quantity > item.quantity) {
+      addBasketItem({ product, quantity: updatedQuantity });
+    } else {
+      removeBasketItem({ productId: product.id, quantity: updatedQuantity });
+    }
+  };
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = +event.currentTarget.value;
 
-    if (value > 0) setQuantity(value);
+    if (value >= 0) setQuantity(value);
   };
-
-  const { data: product, isLoading } = useFetchProductDetailsQuery(
-    id ? +id : 0,
-  );
-
-  if (!product || isLoading) return <div>Loading...</div>;
 
   const productDetails = [
     { label: "Name", value: product.name },
@@ -41,16 +42,12 @@ export default function ProductDetails() {
   return (
     <Grid container spacing={6} sx={{ mx: "auto", maxWidth: "lg" }}>
       <Grid size={6}>
-        <img
-          src={product.pictureUrl}
-          alt={product.name}
-          style={{ width: "100%" }}
-        />
+        <img src={product.pictureUrl} alt={product.name} style={{ width: "100%" }} />
       </Grid>
       <Grid size={6}>
-        <Typography variant="h3">{product.name}</Typography>
+        <Typography variant='h3'>{product.name}</Typography>
         <Divider sx={{ mb: 2 }} />
-        <Typography variant="h4" color="secondary">
+        <Typography variant='h4' color='secondary'>
           ${(product.price / 100).toFixed(2)}
         </Typography>
         <TableContainer>
@@ -58,9 +55,7 @@ export default function ProductDetails() {
             <TableBody>
               {productDetails.map((detail, index) => (
                 <TableRow key={index}>
-                  <TableCell sx={{ fontWeight: "bold" }}>
-                    {detail.label}
-                  </TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>{detail.label}</TableCell>
                   <TableCell>{detail.value}</TableCell>
                 </TableRow>
               ))}
@@ -70,9 +65,9 @@ export default function ProductDetails() {
         <Grid container spacing={2} sx={{ mt: 3 }}>
           <Grid size={6}>
             <TextField
-              variant="outlined"
-              type="number"
-              label="Quantity in basket"
+              variant='outlined'
+              type='number'
+              label='Quantity in basket'
               fullWidth
               value={quantity}
               onChange={handleInputChange}
@@ -80,13 +75,14 @@ export default function ProductDetails() {
           </Grid>
           <Grid size={6}>
             <Button
-              color="primary"
-              size="large"
-              variant="contained"
+              onClick={handleUpdateBasket}
+              disabled={quantity === item?.quantity || (!item && quantity === 0)}
+              color='primary'
+              size='large'
+              variant='contained'
               fullWidth
-              sx={{ height: "55px" }}
-            >
-              Add to basket
+              sx={{ height: "55px" }}>
+              {item ? "Update quantity" : "Add to basket"}
             </Button>
           </Grid>
         </Grid>
