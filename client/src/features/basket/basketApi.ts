@@ -1,8 +1,8 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import Cookies from "js-cookie";
 import { baseQueryWithErrorHandling } from "../../app/api/baseApi";
-import { type Item, type Basket } from "../../app/models/basket";
+import type { Basket, Item } from "../../app/models/basket";
 import type { Product } from "../../app/models/product";
+import Cookies from "js-cookie";
 
 function isBasketItem(product: Product | Item): product is Item {
   return (product as Item).quantity !== undefined;
@@ -40,6 +40,7 @@ export const basketApi = createApi({
             }
           })
         );
+
         try {
           await queryFulfilled;
 
@@ -67,6 +68,7 @@ export const basketApi = createApi({
             }
           })
         );
+
         try {
           await queryFulfilled;
         } catch (error) {
@@ -81,6 +83,7 @@ export const basketApi = createApi({
         dispatch(
           basketApi.util.updateQueryData("fetchBasket", undefined, (draft) => {
             draft.items = [];
+            draft.basketId = "";
           })
         );
         Cookies.remove("basketId");
