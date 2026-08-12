@@ -1,9 +1,9 @@
-import { Button, Menu, Fade, MenuItem, ListItemIcon, ListItemText, Divider } from "@mui/material";
-import { useState } from "react";
-import type { User } from "../models/user";
-import { History, Logout, Person } from "@mui/icons-material";
-import { useLogoutMutation } from "../../features/account/accountApi";
-import { Link } from "react-router";
+import { Button, Menu, Fade, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
+import { useState } from 'react';
+import type { User } from '../models/user';
+import { History, Inventory, Logout, Person } from '@mui/icons-material';
+import { useLogoutMutation } from '../../features/account/accountApi';
+import { Link } from 'react-router';
 
 type Props = {
   user: User;
@@ -22,14 +22,14 @@ export default function UserMenu({ user }: Props) {
 
   return (
     <div>
-      <Button color='inherit' size='large' sx={{ fontSize: "1.1rem" }} onClick={handleClick}>
+      <Button color='inherit' size='large' sx={{ fontSize: '1.1rem' }} onClick={handleClick}>
         {user.email}
       </Button>
       <Menu
         id='fade-menu'
         slotProps={{
           list: {
-            "aria-labelledby": "fade-button",
+            'aria-labelledby': 'fade-button',
           },
         }}
         slots={{ transition: Fade }}
@@ -48,6 +48,14 @@ export default function UserMenu({ user }: Props) {
           </ListItemIcon>
           <ListItemText>My orders</ListItemText>
         </MenuItem>
+        {user.roles.includes('Admin') && (
+          <MenuItem component={Link} to='/inventory'>
+            <ListItemIcon>
+              <Inventory />
+            </ListItemIcon>
+            <ListItemText>Inventory</ListItemText>
+          </MenuItem>
+        )}
         <Divider />
         <MenuItem onClick={logout}>
           <ListItemIcon>
