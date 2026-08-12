@@ -27,6 +27,7 @@ builder.Services.AddIdentityApiEndpoints<User>(opt =>
 })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<StoreContext>();
+builder.Services.AddScoped<DiscountService>();
 
 var app = builder.Build();
 
