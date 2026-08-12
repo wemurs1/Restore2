@@ -3,6 +3,7 @@ using API.DTOs;
 using API.Entities;
 using API.Extensions;
 using API.RequestHelpers;
+using API.Services;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
-public class ProductsController(StoreContext context, IMapper mapper) : BaseApiController
+public class ProductsController(StoreContext context, IMapper mapper, ImageService imageService) : BaseApiController
 {
     [HttpGet]
     public async Task<ActionResult<List<Product>>> GetProducts([FromQuery] ProductParams productParams)
@@ -52,6 +53,17 @@ public class ProductsController(StoreContext context, IMapper mapper) : BaseApiC
     public async Task<ActionResult<Product>> CreateProduct(CreateProductDto productDto)
     {
         var product = mapper.Map<Product>(productDto);
+        if (productDto.File != null)
+        {
+            var imageResult = await imageService.AddImageAsync(productDto.File);
+            if (imageResult.Error != null)
+            {
+                return BadRequest(imageResult.Error.Message);
+            }
+
+            product.PictureUrl = imageResult.SecureUrl.AbsoluteUri;
+            product.PublicId = imageResult.PublicId;
+        }
 
         context.Products.Add(product);
 
@@ -72,6 +84,17 @@ public class ProductsController(StoreContext context, IMapper mapper) : BaseApiC
 
         mapper.Map(productDto, product);
 
+        if (productDto.File != null)
+        {
+            var imageResult = await imageService.AddImageAsync(productDto.File);
+            if (imageResult.Error != null) return BadRequest(imageResult.Error.Message);
+
+            if (!string.IsNullOrEmpty(product.PublicId)) await imageService.DeleteImageASync(product.PublicId);
+
+            product.PictureUrl = imageResult.SecureUrl.AbsoluteUri;
+            product.PublicId = imageResult.PublicId;
+        }
+
         var result = await context.SaveChangesAsync() > 0;
 
         if (result) return NoContent();
@@ -86,6 +109,8 @@ public class ProductsController(StoreContext context, IMapper mapper) : BaseApiC
         var product = await context.Products.FindAsync(id);
 
         if (product == null) return NotFound();
+
+        if (!string.IsNullOrEmpty(product.PublicId)) await imageService.DeleteImageASync(product.PublicId);
 
         context.Products.Remove(product);
 
